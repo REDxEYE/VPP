@@ -6,8 +6,10 @@ from tkinter.ttk import *
 import tkinter.ttk as ttk
 import threading
 import itertools
-
-
+import win32api
+import win32con
+import ctypes
+user32 = ctypes.windll.user32
 def getpath():
     return os.path.dirname(os.path.abspath(__file__))
 
@@ -65,27 +67,26 @@ class Main:
             self.Open()
             return
         notes = str(self.NotesBox.get(0.0,END))
-        notes.rstrip("\n")
-        sheet = []
-
-        sheetN = notes.split('\n')
-        for s in itertools.chain(sheetN):
-            ss = s.split(' ')
-            for a in ss:
-                sheet.append(a)
-        while '' in sheet:
-            sheet.remove('')
-        sleep(2)
-        self.PlayThrd = threading.Thread(target=self.ActuallPlay,args=(sheet))
+        b = []
+        b.append(notes)
+        sleep(5)
+        stopEV = threading.Event
+        self.PlayThrd = threading.Thread(target=KB.ActuallPlay,args=(b,stopEV))
         self.PlayThrd.start()
-        self.StopThrd = threading.Thread(target=self.Stop)
+        self.StopThrd = threading.Thread(target=self.Stop,args=stopEV)
+        self.StopThrd.start()
         return
-    def ActuallPlay(self,sheet):
-        for note in sheet:
-            note = note.split(':')
-            KB.Press(note[0],note[1])
-    def Stop(self):
 
+    def Stop(self,ev):
+        while True:
+            if win32api.GetAsyncKeyState(win32con.VK_INSERT) !=0:
+
+
+
+                ev.set()
+                break
+        self.PlayThrd.join()
+        self.StopThrd.join()
     def Translate(self,notes):
         NewNotes = []
         for note in notes:

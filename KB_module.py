@@ -1,5 +1,8 @@
 
 import ctypes
+
+import itertools
+
 user32 = ctypes.windll.user32
 from time import sleep
 
@@ -248,3 +251,19 @@ def Press(Keys,time):
     for Key in Keys:
         KBOut(Key)
     sleep(int(time) / 1000)
+def ActuallPlay(notes,evS):
+        sheet = []
+
+        sheetN = notes[0].split('\n')
+        for s in itertools.chain(sheetN):
+            ss = s.split(' ')
+            for a in ss:
+                sheet.append(a)
+        while '' in sheet:
+            sheet.remove('')
+        for note in sheet:
+            note = note.split(':')
+            print(note)
+            if evS.is_set():
+                break
+            #Press(note[0],note[1])
