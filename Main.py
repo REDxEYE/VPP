@@ -26,54 +26,82 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 class Main:
     def __init__(self):
+        #root building
         self.root = Tk()
         self.root.title("VPP")
+        #icon
         icon = resource_path('icon.ico')
         self.root.iconbitmap(icon)
+        #adding menu bar
         self.menu = Menu(self.root)
         self.root.config(menu=self.menu)
+        #File menu
         self.filemenu = Menu(self.menu,tearoff=0)
-
         self.menu.add_cascade(label="File", menu=self.filemenu)
-
+        # "open" submenu
         self.OpenMenu = Menu(self.filemenu,tearoff=0)
-        self.OpenMenu.add_command(label="Parse", command=self.Parse)
-        self.OpenMenu.add_command(label="Open", command=self.Open)
-
         self.filemenu.add_cascade(label='Open', menu=self.OpenMenu, underline=0)
-        self.filemenu.add_command(label="Save", command=self.Save)
+        self.OpenMenu.add_command(label="Parse", command=self.Parse)
+        self.OpenMenu.add_command(label="Import", command=self.Open)
 
+
+        self.filemenu.add_command(label="Save", command=self.Save)
+        #info menu
         self.Info = Menu(self.menu,tearoff=0)
         self.menu.add_cascade(label="Info", menu=self.Info)
         self.Info.add_command(label="About", command=InfoWindow)
+        #Creating tabs
+        self.Tabs = Notebook(self.root)
+        self.Tabs.pack()
+        #Adding frames to Noteboot
+        self.EditTab = Frame()
+        self.LibraryTab = Frame()
+        self.Tabs.add(self.EditTab,text = 'Edit')
+        self.Tabs.add(self.LibraryTab,text = 'Library')
 
-        self.NotesBox = Text(self.root, height=20, width=50)
+
+        #Layout for Edit frame
+        self.NotesBox = Text(self.EditTab, height=20, width=50)
         self.NotesBox.pack(side=RIGHT,expand = 1, fill= BOTH)
-
-        self.PlayBtn = Button(self.root, text='Play', command=self.Play)
+        self.PlayBtn = Button(self.EditTab, text='Play', command=self.Play)
         self.PlayBtn.pack(side=RIGHT)
+
+
+        #Layout for Library frame
+
+
+
+
+
+
+
 
         self.root.mainloop()
 
+
     def Parse(self):
+        """Parse raw txt file """
         file = self.OpenSheet().read()
         notes = file.split(' ')
         notes = self.Translate(notes)
         self.Insert2(notes, self.NotesBox)
 
     def Save(self):
+        """save Note sheet"""
         name = asksaveasfile(filetypes=[("Notes", ".txt")], defaultextension=".txt")
         text2save = str(self.NotesBox.get(0.0, END))
         name.write(text2save)
         name.close
 
     def Open(self):
+        """open Note sheet"""
         file = askopenfile(mode="r", filetypes=[("Notes", ".txt")])
         notes = file.read()
         self.NotesBox.delete(0.0, END)
         self.NotesBox.insert(0.0, notes, END)
 
     def Insert2(self, text, widget):
+        """Insert to widget(widget) and add \n to every 10th item in list(text) """
         widget.delete(0.0, END)
         ss = ""
         t = 0
@@ -85,7 +113,7 @@ class Main:
                 ss += '\n'
         widget.insert(END, ss)
     def Play(self):
-
+        """Plays song in Text widget(NotesBox) """
         if self.NotesBox.get(0.0, END) == "\n":
             self.Open()
             return
@@ -94,7 +122,6 @@ class Main:
         self.ActuallPlay(notes)
         return
 
-    # noinspection PyMethodMayBeStatic
     def ActuallPlay(self, notes):
         sheet = []
         sheetN = notes.split('\n')
@@ -110,10 +137,11 @@ class Main:
                 break
             KB.Press(note[0], note[1])
 
-    def Translate(self, notes):
+    def Translate(self, notes,pause = 100):
+        """writing notes in note:pause style"""
         NewNotes = []
         for note in notes:
-            line = note + ':' + str(100)
+            line = note + ':' + str(pause)
             NewNotes.append(line)
         return NewNotes
 
