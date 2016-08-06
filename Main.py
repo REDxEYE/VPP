@@ -84,7 +84,6 @@ class Main:
                 t = 0
                 ss += '\n'
         widget.insert(END, ss)
-
     def Play(self):
 
         if self.NotesBox.get(0.0, END) == "\n":
