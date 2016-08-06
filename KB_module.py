@@ -1,8 +1,4 @@
-
 import ctypes
-
-import itertools
-
 user32 = ctypes.windll.user32
 from time import sleep
 
