@@ -4,7 +4,7 @@ import win32api
 from time import sleep
 from tkinter.filedialog import *
 from tkinter.ttk import *
-
+import json
 import win32con
 
 import KB_module as KB
@@ -26,8 +26,10 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 class Main:
     def __init__(self):
+
         #root building
         self.root = Tk()
+        self.LoadLibrary()
         self.root.title("VPP")
         #icon
         icon = resource_path('icon.ico')
@@ -63,13 +65,26 @@ class Main:
         #Layout for Edit frame
         self.NotesBox = Text(self.EditTab, height=20, width=50)
         self.NotesBox.pack(side=RIGHT,expand = 1, fill= BOTH)
+        self.Add2LibBtn = Button(self.EditTab,text = "Add to\nlibrary",command =self.Add2lib_Window)
+        self.Add2LibBtn.pack()
         self.PlayBtn = Button(self.EditTab, text='Play', command=self.Play)
         self.PlayBtn.pack(side=RIGHT)
 
 
         #Layout for Library frame
+        self.EditBtn = Button(self.LibraryTab)
+        self.EditBtn.pack()
+        self.PlayBtn2 = Button(self.LibraryTab)
+        self.PlayBtn2.pack()
+
         self.LibList = Listbox(self.LibraryTab)
         self.LibList.pack(side=LEFT, fill=Y)
+        for name in self.Lib.keys():
+            self.LibList.insert(END,name)
+        #self.LibList.bind('<Button-1>',lambda _:self.Insert2(self.Lib[self.LibList.curselection()]))
+        self.LibList.bind('<<ListboxSelect>>',lambda _:self.Preview(self.LibList))
+        self.PreviewBox = Text(self.LibraryTab)
+        self.PreviewBox.pack(side = LEFT)
 
 
 
@@ -78,14 +93,53 @@ class Main:
 
 
         self.root.mainloop()
+    def Preview(self,List):
+        index = int(List.curselection()[0])
+        self.PreviewBox.delete(0.0,END)
+        self.PreviewBox.insert(END,self.Lib[List.get(index)])
+    def Add2lib_Window(self):
+        win  = Toplevel()
+        win.geometry("200x100")
+        win.title('Add to library')
+        Label(win, text="Name").pack(side = RIGHT)
+        self.Name = Entry(win)
+        self.Name.pack(side = RIGHT)
+        tt = Button(win, text='add')
+        tt.pack(side = RIGHT)
+        tt.bind('<Button-1>',lambda _:self.Add2lib_Event(self.Name.get(),win))
+    def Add2lib_Event(self,Name,win):
+        win.destroy()
+        self.Lib[Name] = self.notes
+        self.SaveLibrary()
+    def LoadLibrary(self):
+        self.path = getpath()
+        is_exist = True
+        try:
+            _ =open(self.path + '/lib.json', 'r')
+        except:
+            print('lib is not found')
+            is_exist = False
+        if is_exist:
+            print('lib is found')
+            with open(self.path + '/lib.json', 'r') as libS:
+                    self.Lib = json.load(libS)
+        else:
 
+            self.Lib = {}
+            with open(self.path + '/lib.json', 'w') as libS:
+                json.dump(self.Lib, libS)
+            with open(self.path + '/lib.json', 'r') as libS:
+                self.Lib = json.load(libS)
+    def SaveLibrary(self):
+        with open(self.path + '/lib.json', 'w') as libS:
+                json.dump(self.Lib, libS)
 
     def Parse(self):
         """Parse raw txt file """
         file = self.OpenSheet().read()
-        notes = file.split(' ')
-        notes = self.Translate(notes)
-        self.Insert2(notes, self.NotesBox)
+        self.notes = file.split(' ')
+        self.notes = self.Translate(self.notes)
+        self.Insert2(self.notes, self.NotesBox)
 
     def Save(self):
         """save Note sheet"""
@@ -97,9 +151,9 @@ class Main:
     def Open(self):
         """open Note sheet"""
         file = askopenfile(mode="r", filetypes=[("Notes", ".txt")])
-        notes = file.read()
+        self.notes = file.read()
         self.NotesBox.delete(0.0, END)
-        self.NotesBox.insert(0.0, notes, END)
+        self.NotesBox.insert(0.0, self.notes, END)
 
     def Insert2(self, text, widget):
         """Insert to widget(widget) and add \n to every 10th item in list(text) """
@@ -151,14 +205,15 @@ class Main:
         return file
 
 class InfoWindow:
-    def __init__(self):
+    def __init__(self,msg = None):
 
         win = Toplevel()
         win.geometry("200x100")
         win.wm_attributes('-topmost',1)
         win.title('About')
-        message = "Authors:\nRED_EYE\nVlad Bronks"
-        Label(win, text=message).pack()
+        if msg ==None:
+            msg = "Authors:\nRED_EYE\nVlad Bronks"
+        Label(win, text=msg).pack()
 
         Button(win, text='OK', command=win.destroy).pack()
 
