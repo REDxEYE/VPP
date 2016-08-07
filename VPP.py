@@ -68,7 +68,8 @@ class Main:
 
 
         #Layout for Library frame
-
+        self.LibList = Listbox(self.LibraryTab)
+        self.LibList.pack(side=LEFT, fill=Y)
 
 
 
