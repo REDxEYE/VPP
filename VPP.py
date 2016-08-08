@@ -1,10 +1,11 @@
 import ctypes
 import itertools
-import win32api
+import json
 from time import sleep
 from tkinter.filedialog import *
 from tkinter.ttk import *
-import json
+
+import win32api
 import win32con
 
 import KB_module as KB
@@ -31,6 +32,7 @@ class Main:
         #root building
         self.root = Tk()
         self.LoadLibrary()
+
         self.root.bind_class('Entry','<Control-v>',self.ClipBoard)
         self.root.bind_class('Entry','<Control-c>',self.copy)
         self.root.bind_class('Text','<Control-v>',self.ClipBoard)
@@ -91,19 +93,33 @@ class Main:
         self.PlayBtn2.bind('<Button-1>',lambda _:self.Play(self.PreviewBox.get(0.0,END)))
         self.PlayBtn2.pack(side = LEFT)
 
-
-        #self.LibList.bind('<Button-1>',lambda _:self.Insert2(self.Lib[self.LibList.curselection()]))
         self.LibList.bind('<<ListboxSelect>>',lambda _:self.Preview(self.LibList))
         self.PreviewBox = Text(self.PreviewFrame)
         self.PreviewBox.pack(side = LEFT,expand = 1, fill= BOTH)
 
+        # Setting tab
+        self.SettingFrame = Frame()
+        self.Tabs.add(self.SettingFrame, text='Settings')
+        self.SpeedMult = Spinbox(self.SettingFrame, from_=0.0, to=4, wrap=True, increment=0.05)
+        self.SpeedMult.insert(1, 1)
+        self.SpeedMult.pack()
 
-
-
-
-
-
+        self.CheckSheetsFolder()
         self.root.mainloop()
+
+    def CheckSheetsFolder(self):
+        path = getpath() + '\sheets'
+        for file in os.scandir(path):
+            if not file.name.startswith('.') and file.is_file():
+                name = (file.name).replace('.txt', '')
+                if name in self.Lib.keys():
+                    continue
+                with open(path + '/' + file.name, 'r') as Sheet:
+                    notes = Sheet.read().split(' ')
+                    self.Add2lib_Event(Name=name, notes=notes)
+        self.FillLibList()
+
+
     def FillLibList(self):
         self.LibList.delete(0,END)
         for name in self.Lib.keys():
@@ -131,10 +147,15 @@ class Main:
         tt = Button(win, text='add')
         tt.pack(side = RIGHT)
         tt.bind('<Button-1>',lambda _:self.Add2lib_Event(self.Name.get(),win))
-    def Add2lib_Event(self,Name,win):
+
+    def Add2lib_Event(self, Name, notes=None, win=None):
         self.FillLibList()
-        win.destroy()
-        self.Lib[Name] = self.notes
+        if win != None:
+            win.destroy()
+        if notes == None:
+            self.Lib[Name] = self.notes
+        if notes != None:
+            self.Lib[Name] = notes
         self.SaveLibrary()
     def LoadLibrary(self):
         self.path = getpath()
@@ -159,13 +180,16 @@ class Main:
         with open(self.path + '/lib.json', 'w') as libS:
                 json.dump(self.Lib, libS)
 
-    def Parse(self,file = None):
+    def Parse(self, file=None, ret=False):
         """Parse raw txt file """
         if file ==None:
             file = self.OpenSheet().read()
         self.notes = file.split(' ')
         self.notes = self.Translate(self.notes)
-        self.Insert2(self.notes, self.NotesBox)
+        if not ret:
+            self.Insert2(self.notes, self.NotesBox)
+        if ret:
+            return self.notes
 
     def Save(self):
         """save Note sheet"""
@@ -224,13 +248,13 @@ class Main:
                 note = note.split(':')
                 if win32api.GetAsyncKeyState(win32con.VK_INSERT) != 0:
                     break
-                KB.Press(note[0], note[1])
+                KB.Press(note[0], note[1], self.SpeedMult.get())
         else:
             for note in notes:
                 note = note.split(':')
                 if win32api.GetAsyncKeyState(win32con.VK_INSERT) != 0:
                     break
-                KB.Press(note[0], note[1])
+                KB.Press(note[0], note[1], self.SpeedMult.get())
 
     def Translate(self, notes,pause = 100):
         """writing notes in note:pause style"""

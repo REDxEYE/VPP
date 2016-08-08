@@ -243,7 +243,9 @@ def KBOut(Key):
         KeyUp(Base[Combs[Key][0]])
         return True
     return False
-def Press(Keys,time):
+
+
+def Press(Keys, time, mult):
     for Key in Keys:
         KBOut(Key)
-    sleep(int(time) / 1000)
+    sleep((int(time) / float(mult)) / 1000)
