@@ -21,7 +21,8 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath(".")
+        base_path = getpath()
+        #base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
 class Main:
@@ -30,6 +31,10 @@ class Main:
         #root building
         self.root = Tk()
         self.LoadLibrary()
+        self.root.bind_class('Entry','<Control-v>',self.ClipBoard)
+        self.root.bind_class('Entry','<Control-c>',self.copy)
+        self.root.bind_class('Text','<Control-v>',self.ClipBoard)
+        self.root.bind_class('Text','<Control-c>',self.copy)
         self.root.title("VPP")
         #icon
         icon = resource_path('icon.ico')
@@ -54,7 +59,7 @@ class Main:
         self.Info.add_command(label="About", command=InfoWindow)
         #Creating tabs
         self.Tabs = Notebook(self.root)
-        self.Tabs.pack()
+        self.Tabs.pack(expand = 1, fill= BOTH)
         #Adding frames to Noteboot
         self.EditTab = Frame()
         self.LibraryTab = Frame()
@@ -72,19 +77,25 @@ class Main:
 
 
         #Layout for Library frame
-        self.EditBtn = Button(self.LibraryTab)
-        self.EditBtn.pack()
-        self.PlayBtn2 = Button(self.LibraryTab)
-        self.PlayBtn2.pack()
-
         self.LibList = Listbox(self.LibraryTab)
         self.LibList.pack(side=LEFT, fill=Y)
-        for name in self.Lib.keys():
-            self.LibList.insert(END,name)
+        self.FillLibList()
+
+        self.PreviewFrame  = Frame(self.LibraryTab)
+        self.PreviewFrame.pack(side = LEFT,expand = 1,fill = BOTH)
+        self.BTNFrame  = Frame(self.PreviewFrame)
+        self.BTNFrame.pack(fill = X)
+        self.SaveBtn = Button(self.BTNFrame)
+        self.SaveBtn.pack(side = LEFT)
+        self.PlayBtn2 = Button(self.BTNFrame,text = 'Play')
+        self.PlayBtn2.bind('<Button-1>',lambda _:self.Play(self.PreviewBox.get(0.0,END)))
+        self.PlayBtn2.pack(side = LEFT)
+
+
         #self.LibList.bind('<Button-1>',lambda _:self.Insert2(self.Lib[self.LibList.curselection()]))
         self.LibList.bind('<<ListboxSelect>>',lambda _:self.Preview(self.LibList))
-        self.PreviewBox = Text(self.LibraryTab)
-        self.PreviewBox.pack(side = LEFT)
+        self.PreviewBox = Text(self.PreviewFrame)
+        self.PreviewBox.pack(side = LEFT,expand = 1, fill= BOTH)
 
 
 
@@ -93,10 +104,23 @@ class Main:
 
 
         self.root.mainloop()
+    def FillLibList(self):
+        self.LibList.delete(0,END)
+        for name in self.Lib.keys():
+            self.LibList.insert(END,name)
+    def ClipBoard(self,event):
+        w = event.widget
+        w.insert(0.0,self.root.clipboard_get())
+    def copy(self, event):
+        w = event.widget
+        w.clipboard_clear()
+        text = w.get("sel.first", "sel.last")
+        w.clipboard_append(text)
     def Preview(self,List):
         index = int(List.curselection()[0])
         self.PreviewBox.delete(0.0,END)
-        self.PreviewBox.insert(END,self.Lib[List.get(index)])
+        self.PreviewBox.insert(END,' '.join(self.Lib[List.get(index)]))
+        print(self.Lib[List.get(index)])
     def Add2lib_Window(self):
         win  = Toplevel()
         win.geometry("200x100")
@@ -108,6 +132,7 @@ class Main:
         tt.pack(side = RIGHT)
         tt.bind('<Button-1>',lambda _:self.Add2lib_Event(self.Name.get(),win))
     def Add2lib_Event(self,Name,win):
+        self.FillLibList()
         win.destroy()
         self.Lib[Name] = self.notes
         self.SaveLibrary()
@@ -134,9 +159,10 @@ class Main:
         with open(self.path + '/lib.json', 'w') as libS:
                 json.dump(self.Lib, libS)
 
-    def Parse(self):
+    def Parse(self,file = None):
         """Parse raw txt file """
-        file = self.OpenSheet().read()
+        if file ==None:
+            file = self.OpenSheet().read()
         self.notes = file.split(' ')
         self.notes = self.Translate(self.notes)
         self.Insert2(self.notes, self.NotesBox)
@@ -167,30 +193,44 @@ class Main:
                 t = 0
                 ss += '\n'
         widget.insert(END, ss)
-    def Play(self):
+    def Play(self,notes = None):
         """Plays song in Text widget(NotesBox) """
-        if self.NotesBox.get(0.0, END) == "\n":
-            self.Open()
-            return
-        notes = str(self.NotesBox.get(0.0, END))
+        if notes == None:
+            if self.NotesBox.get(0.0, END) == "\n":
+                self.Open()
+                return
+            notes = str(self.NotesBox.get(0.0, END))
+            if not ":" in notes:
+                self.Parse(notes)
+                notes = str(self.NotesBox.get(0.0, END))
+                return
+
+
         sleep(5)
         self.ActuallPlay(notes)
         return
 
     def ActuallPlay(self, notes):
-        sheet = []
-        sheetN = notes.split('\n')
-        for s in itertools.chain(sheetN):
-            ss = s.split(' ')
-            for a in ss:
-                sheet.append(a)
-        while '' in sheet:
-            sheet.remove('')
-        for note in sheet:
-            note = note.split(':')
-            if win32api.GetAsyncKeyState(win32con.VK_INSERT) != 0:
-                break
-            KB.Press(note[0], note[1])
+        if 'list' not in str(type(notes)):
+            sheet = []
+            sheetN = notes.split('\n')
+            for s in itertools.chain(sheetN):
+                ss = s.split(' ')
+                for a in ss:
+                    sheet.append(a)
+            while '' in sheet:
+                sheet.remove('')
+            for note in sheet:
+                note = note.split(':')
+                if win32api.GetAsyncKeyState(win32con.VK_INSERT) != 0:
+                    break
+                KB.Press(note[0], note[1])
+        else:
+            for note in notes:
+                note = note.split(':')
+                if win32api.GetAsyncKeyState(win32con.VK_INSERT) != 0:
+                    break
+                KB.Press(note[0], note[1])
 
     def Translate(self, notes,pause = 100):
         """writing notes in note:pause style"""
