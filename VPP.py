@@ -152,7 +152,7 @@ class Main:
         self.FillLibList()
         if win != None:
             win.destroy()
-        if notes == None:
+        if notes is None:
             self.Lib[Name] = self.notes
         if notes != None:
             self.Lib[Name] = notes
@@ -167,14 +167,12 @@ class Main:
             is_exist = False
         if is_exist:
             print('lib is found')
-            with open(self.path + '/lib.json', 'r') as libS:
-                    self.Lib = json.load(libS)
         else:
 
             self.Lib = {}
             with open(self.path + '/lib.json', 'w') as libS:
                 json.dump(self.Lib, libS)
-            with open(self.path + '/lib.json', 'r') as libS:
+        with open(self.path + '/lib.json', 'r') as libS:
                 self.Lib = json.load(libS)
     def SaveLibrary(self):
         with open(self.path + '/lib.json', 'w') as libS:
@@ -182,7 +180,7 @@ class Main:
 
     def Parse(self, file=None, ret=False):
         """Parse raw txt file """
-        if file ==None:
+        if file is None:
             file = self.OpenSheet().read()
         self.notes = file.split(' ')
         self.notes = self.Translate(self.notes)
@@ -219,12 +217,12 @@ class Main:
         widget.insert(END, ss)
     def Play(self,notes = None):
         """Plays song in Text widget(NotesBox) """
-        if notes == None:
+        if notes is None:
             if self.NotesBox.get(0.0, END) == "\n":
                 self.Open()
                 return
             notes = str(self.NotesBox.get(0.0, END))
-            if not ":" in notes:
+            if ":" not in notes:
                 self.Parse(notes)
                 notes = str(self.NotesBox.get(0.0, END))
                 return
@@ -265,8 +263,7 @@ class Main:
         return NewNotes
 
     def OpenSheet(self):
-        file = askopenfile(mode="r", filetypes=[("Notes", ".txt")])
-        return file
+        return askopenfile(mode="r", filetypes=[("Notes", ".txt")])
 
 class InfoWindow:
     def __init__(self,msg = None):
@@ -275,7 +272,7 @@ class InfoWindow:
         win.geometry("200x100")
         win.wm_attributes('-topmost',1)
         win.title('About')
-        if msg ==None:
+        if msg is None:
             msg = "Authors:\nRED_EYE\nVlad Bronks"
         Label(win, text=msg).pack()
 
